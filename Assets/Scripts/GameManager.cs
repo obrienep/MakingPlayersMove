@@ -6,9 +6,19 @@ using UnityEngine;
 //
 // This adds the serverStartType property which allows you to specify how the project
 // should be run when running through the Unity editor.
-public class GameManager : MonoBehaviour {
+public class GameManager : NetworkBehaviour {
     public NetworkCommandLine.StartModes serverStartType = NetworkCommandLine.StartModes.CHOOSE;
     private GameObject networkCmdlnObj;
+
+    private Color[] playerColors = new Color[] {
+        Color.red,
+        Color.blue,
+        Color.green,
+        Color.yellow,
+        Color.grey,
+        Color.cyan
+    };
+    private int colorIndex = 0;
 
 
     private void Start() {
@@ -47,4 +57,19 @@ public class GameManager : MonoBehaviour {
             NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetType().Name);
         GUILayout.Label("Mode: " + mode);
     }
+
+            [ServerRpc(RequireOwnership = false)]
+        public void RequestNewPlayerColorServerRpc(ServerRpcParams serverRpcParams = default) {
+            if (!IsServer) return;
+
+            Color newColor = playerColors[colorIndex];
+            colorIndex += 1;
+            if (colorIndex > playerColors.Length - 1) {
+                colorIndex = 0;
+            }
+
+            var po = NetworkManager.Singleton.ConnectedClients[serverRpcParams.Receive.SenderClientId].PlayerObject;
+            Player player = po.GetComponent<Player>();
+            player.PlayerColor.Value = newColor;
+        }
 }
